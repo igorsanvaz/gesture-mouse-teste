@@ -49,6 +49,20 @@ def draw_dwell(frame: np.ndarray, progress: float, center=(50, 120), radius=26) 
         cv2.ellipse(frame, center, (radius, radius), -90, 0, int(360 * progress), GREEN, 5)
 
 
+def draw_scroll(frame: np.ndarray, offset: float, dead_zone: float, full_range: float,
+                center=(40, 130), half=60) -> None:
+    """Barra vertical da rolagem: faixa cinza = zona morta, marcador = posição da mão."""
+    x, y = center
+    cv2.rectangle(frame, (x - 8, y - half), (x + 8, y + half), GRAY, 2)
+    dz = int(half * dead_zone / full_range)
+    cv2.rectangle(frame, (x - 8, y - dz), (x + 8, y + dz), GRAY, -1)
+    pos = y - int(half * max(-1.0, min(1.0, offset / full_range)))
+    color = GREEN if abs(offset) > dead_zone else WHITE
+    cv2.circle(frame, (x, pos), 9, color, -1)
+    cv2.putText(frame, "ROLAGEM", (x - 30, y + half + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                color, 1, cv2.LINE_AA)
+
+
 def draw_status(frame: np.ndarray, lines: list[str], color=WHITE) -> None:
     y = 24
     for text in lines:

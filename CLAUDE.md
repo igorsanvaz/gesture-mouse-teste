@@ -18,7 +18,8 @@ Pipeline por quadro em `src/gesture_mouse/app.py`:
 captura (OpenCV) → `tracker.HandTracker` (MediaPipe Tasks, modo VIDEO) →
 ponto da mão (`tracker.cursor_landmark`, padrão 9) → `tremor` (opcional) →
 `mapping.image_to_screen` com a `ControlBox` calibrada → `filters` (em px de tela) →
-`clicks.DwellClicker` ou `clicks.PinchClicker` → `cursor.CursorController` (PyAutoGUI).
+`gestures.PostureDetector` (rolagem com `gestures.ScrollController`, ou cliques:
+`clicks.DwellClicker`/`clicks.PinchClicker` + `gestures.ExtraPinches`) → `cursor.CursorController` (PyAutoGUI).
 
 ## Convenções
 

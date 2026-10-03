@@ -10,6 +10,9 @@ Recursos implementados:
 - **Estabilização do cursor** com quatro filtros comparáveis: nenhum, média móvel,
   Kalman e **filtro 1€** (padrão).
 - **Clique por permanência** (padrão): o cursor parado por 1 s clica, com anel de progresso.
+- **Rolagem por gesto** (indicador + médio esticados), no estilo joystick: a mão acima
+  ou abaixo do ponto inicial rola a página, mais rápido quanto mais longe.
+- **Clique direito** (pinça polegar + médio) e **clique duplo** (pinça polegar + anelar).
 - **Clique por pinça** (polegar + indicador), com histerese e congelamento do cursor
   no momento do clique; manter a pinça fechada permite arrastar.
 - **Calibração personalizada**: o usuário mostra a amplitude de movimento que alcança
@@ -43,6 +46,7 @@ python run.py                      # usa config.json (ou os padrões)
 python run.py --click pinch        # começa no clique por pinça
 python run.py --filter kalman      # escolhe o filtro
 python run.py --dry-run            # mostra o rastreamento sem mover o mouse
+python run.py --camera http://192.168.0.10:4747/video --rotate 90   # celular (DroidCam) em pé
 python run.py --tremor             # liga o tremor sintético
 ```
 
@@ -53,10 +57,27 @@ A janela da câmera abre com o controle **pausado**. Com ela em foco:
 | `ESPAÇO` | ativa / pausa o controle do mouse |
 | `C` | calibra a área de movimento (3 s de preparo + 6 s movendo a mão até os limites confortáveis) |
 | `M` | alterna o clique: permanência ↔ pinça |
+| `B` | escolhe o próximo clique por permanência: esquerdo → duplo → direito → meio → arrastar |
 | `F` | alterna o filtro: nenhum → média móvel → Kalman → 1€ |
 | `T` | liga/desliga o tremor sintético |
 | `S` | salva a configuração atual (inclusive a calibração) em `config.json` |
 | `Q` / `ESC` | sai |
+
+### Gestos
+
+| Gesto | Ação | Modo |
+| --- | --- | --- |
+| mão aberta / relaxada | move o cursor | ambos |
+| indicador + médio esticados (anelar e mínimo dobrados) | rolagem: mão acima do ponto inicial rola para cima, abaixo rola para baixo | ambos |
+| pinça polegar + indicador | clique esquerdo; mantida, arrasta | pinça |
+| pinça polegar + médio | clique direito | ambos |
+| pinça polegar + anelar | clique duplo | ambos |
+| cursor parado por 1 s | clique do tipo escolhido com `B` | permanência |
+
+No modo permanência, duplo, direito e meio valem para um clique e voltam ao esquerdo.
+Arrastar usa duas permanências: a primeira segura o botão, a segunda solta. Durante a
+rolagem o cursor fica parado e os cliques ficam suspensos; a pose precisa se manter por
+0,25 s para valer, o que evita trocas acidentais.
 
 **Dicas de uso:** apoie o cotovelo na mesa para reduzir a fadiga; mantenha boa
 iluminação e a mão inteira visível; faça a calibração antes de ativar o controle.
@@ -75,6 +96,9 @@ principais:
 | `click.dwell_time` | 1.0 s | tempo parado para clicar |
 | `click.dwell_radius` | 30 px | quanto o cursor pode tremer e ainda contar como parado |
 | `click.pinch_on` / `pinch_off` | 0.25 / 0.35 | limiares da pinça (relativos ao tamanho da mão) |
+| `gestures.scroll_dead_zone` | 0.12 | quanto a mão pode se afastar do ponto inicial sem rolar (tamanhos de mão) |
+| `gestures.scroll_max_speed` | 12 | velocidade máxima da rolagem (dentes da roda por segundo) |
+| `camera.index` / `camera.rotate` | 0 / 0 | índice ou URL da câmera; rotação da imagem em graus |
 | `tremor.frequency_hz` / `amplitude` | 5 Hz / 0.01 | tremor sintético (fração da largura da imagem) |
 
 ## Ferramentas de avaliação
@@ -127,6 +151,7 @@ src/gesture_mouse/
   calibration.py           calibração da amplitude de movimento
   filters.py               nenhum, média móvel, Kalman, 1€
   clicks.py                clique por pinça e por permanência
+  gestures.py              rolagem, clique direito/duplo e tipo de clique por permanência
   tremor.py                tremor sintético
   cursor.py                envio ao sistema (PyAutoGUI)
   metrics.py               quadros/s e registro CSV

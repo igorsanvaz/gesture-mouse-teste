@@ -11,10 +11,12 @@ DEFAULT_CONFIG_PATH = Path("config.json")
 
 @dataclass
 class CameraConfig:
-    index: int = 0              # índice da webcam (0 = padrão)
+    # índice da webcam (0 = padrão) ou URL de vídeo, ex.: "http://192.168.0.10:4747/video" (DroidCam)
+    index: int | str = 0
     width: int = 640            # resolução de captura (px)
     height: int = 480
     mirror: bool = True         # espelha a imagem para o movimento parecer natural
+    rotate: int = 0             # gira a imagem em graus (0, 90, 180, 270), ex.: celular em pé
 
 
 @dataclass
@@ -58,6 +60,16 @@ class ClickConfig:
 
 
 @dataclass
+class GestureConfig:
+    # tempo que uma pose (ex.: rolagem) precisa se manter para valer (s)
+    posture_hold_s: float = 0.25
+    # rolagem tipo joystick: distâncias em tamanhos de mão a partir do ponto inicial
+    scroll_dead_zone: float = 0.12   # deslocamento que ainda não rola
+    scroll_full_range: float = 0.5   # deslocamento que atinge a velocidade máxima
+    scroll_max_speed: float = 12.0   # dentes da roda por segundo
+
+
+@dataclass
 class MappingConfig:
     # Região da imagem (coordenadas normalizadas 0–1) mapeada para a tela inteira.
     # É substituída pela calibração do usuário.
@@ -88,6 +100,7 @@ class AppConfig:
     tracker: TrackerConfig = field(default_factory=TrackerConfig)
     filter: FilterConfig = field(default_factory=FilterConfig)
     click: ClickConfig = field(default_factory=ClickConfig)
+    gestures: GestureConfig = field(default_factory=GestureConfig)
     mapping: MappingConfig = field(default_factory=MappingConfig)
     tremor: TremorConfig = field(default_factory=TremorConfig)
     log: LogConfig = field(default_factory=LogConfig)

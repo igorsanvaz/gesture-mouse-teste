@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 
 class CursorController:
     """Envolve o PyAutoGUI. Com `dry_run=True`, nada é enviado ao sistema
@@ -10,6 +12,7 @@ class CursorController:
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         self.button_down = False
+        self._scroll_rest = 0.0     # fração de dente acumulada
         if dry_run:
             self.screen_w, self.screen_h = 1920, 1080
             self._pg = None
@@ -35,9 +38,24 @@ class CursorController:
             self._pg.mouseUp(_pause=False)
         self.button_down = False
 
-    def click(self) -> None:
+    def click(self, button: str = "left") -> None:
         if self._pg:
-            self._pg.click(_pause=False)
+            self._pg.click(button=button, _pause=False)
+
+    def double_click(self) -> None:
+        if self._pg:
+            self._pg.doubleClick(_pause=False)
+
+    def scroll(self, notches: float) -> None:
+        """Rola `notches` dentes da roda (positivo = para cima); aceita frações."""
+        self._scroll_rest += notches
+        # no Windows a roda aceita frações de dente (120 = um dente): rolagem suave
+        unit = 120 if sys.platform == "win32" else 1
+        amount = int(self._scroll_rest * unit)
+        if amount:
+            self._scroll_rest -= amount / unit
+            if self._pg:
+                self._pg.scroll(amount, _pause=False)
 
     def release_all(self) -> None:
         """Garante que o botão não fique preso ao pausar ou sair."""

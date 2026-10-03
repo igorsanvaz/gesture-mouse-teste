@@ -31,6 +31,7 @@ class SessionLogger:
     FIELDS = (
         "t_s", "hand", "raw_x", "raw_y", "filt_x", "filt_y",
         "pinch_ratio", "event", "fps", "proc_ms", "filter", "click_mode", "tremor",
+        "gesture", "scroll",
     )
 
     def __init__(self, directory: str | Path, enabled: bool = True):
@@ -53,7 +54,7 @@ class SessionLogger:
         if not self._writer:
             return
         row.setdefault("t_s", time.perf_counter() - self._t0)
-        for key in ("t_s", "raw_x", "raw_y", "filt_x", "filt_y", "pinch_ratio", "fps", "proc_ms"):
+        for key in ("t_s", "raw_x", "raw_y", "filt_x", "filt_y", "pinch_ratio", "fps", "proc_ms", "scroll"):
             if isinstance(row.get(key), float):
                 row[key] = f"{row[key]:.4f}"
         self._writer.writerow({k: row.get(k, "") for k in self.FIELDS})
