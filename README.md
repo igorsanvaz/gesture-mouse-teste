@@ -46,7 +46,7 @@ python run.py                      # usa config.json (ou os padrões)
 python run.py --click pinch        # começa no clique por pinça
 python run.py --filter kalman      # escolhe o filtro
 python run.py --dry-run            # mostra o rastreamento sem mover o mouse
-python run.py --camera http://192.168.0.10:4747/video --rotate 90   # celular (DroidCam) em pé
+python run.py --camera 
 python run.py --tremor             # liga o tremor sintético
 ```
 
