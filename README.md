@@ -163,13 +163,6 @@ tools/filter_benchmark.py  comparação offline dos filtros
 tests/                     testes automatizados
 ```
 
-## Limitações conhecidas
-
-- No macOS, é preciso permitir o acesso à câmera e à **Acessibilidade** (para mover o
-  mouse) ao Terminal/IDE nas configurações de privacidade.
-- No Linux, o PyAutoGUI exige sessão X11 (no Wayland o cursor pode não se mover).
-- O tempo de processamento registrado mede da leitura do quadro até o envio do
-  movimento; não inclui o atraso interno da webcam nem do monitor.
 
 ## Referências principais
 
