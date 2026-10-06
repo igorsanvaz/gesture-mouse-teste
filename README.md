@@ -1,5 +1,8 @@
 # Gesture Mouse — controle do cursor por gestos de mão (TCC)
 
+> **Veio testar?** Siga o passo a passo em [COMO_TESTAR.md](COMO_TESTAR.md): como baixar,
+> instalar, usar e enviar seu retorno.
+
 Aplicação inicial do TCC de Engenharia da Computação (UNIFEI Itabira): controla o
 cursor do computador por gestos de mão capturados por uma webcam comum, voltada a
 pessoas com dificuldade no uso do mouse.
