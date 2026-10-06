@@ -46,9 +46,21 @@ python run.py                      # usa config.json (ou os padrões)
 python run.py --click pinch        # começa no clique por pinça
 python run.py --filter kalman      # escolhe o filtro
 python run.py --dry-run            # mostra o rastreamento sem mover o mouse
-python run.py --camera 
+python run.py --camera 1          # força a webcam 1 (o padrão, auto, procura sozinho)
 python run.py --tremor             # liga o tremor sintético
 ```
+
+### Câmera (conecte e use)
+
+Por padrão (`--camera auto`) o app encontra a câmera sozinho, nesta ordem: a câmera
+configurada → a última que funcionou → webcams locais (0, 1, 2, 3) → celulares na mesma
+rede Wi-Fi com **DroidCam** (porta 4747) ou **IP Webcam** (porta 8080), **em qualquer IP**.
+
+- Câmeras que só entregam imagem parada ou de cor única (ex.: a tela "Start DroidCam" da
+  câmera virtual sem o celular conectado) são ignoradas.
+- Se a câmera for desconectada ou parar de mandar imagem, o app não fecha: mostra
+  "Procurando camera" e reconecta sozinho, inclusive quando o celular muda de IP.
+- `N` troca para a próxima câmera encontrada; `R` gira a imagem (celular em pé). `S` salva.
 
 A janela da câmera abre com o controle **pausado**. Com ela em foco:
 
@@ -60,6 +72,8 @@ A janela da câmera abre com o controle **pausado**. Com ela em foco:
 | `B` | escolhe o próximo clique por permanência: esquerdo → duplo → direito → meio → arrastar |
 | `F` | alterna o filtro: nenhum → média móvel → Kalman → 1€ |
 | `T` | liga/desliga o tremor sintético |
+| `N` | troca para a próxima câmera encontrada (webcam ou celular na rede) |
+| `R` | gira a imagem da câmera em 90° |
 | `S` | salva a configuração atual (inclusive a calibração) em `config.json` |
 | `Q` / `ESC` | sai |
 
@@ -98,7 +112,7 @@ principais:
 | `click.pinch_on` / `pinch_off` | 0.25 / 0.35 | limiares da pinça (relativos ao tamanho da mão) |
 | `gestures.scroll_dead_zone` | 0.12 | quanto a mão pode se afastar do ponto inicial sem rolar (tamanhos de mão) |
 | `gestures.scroll_max_speed` | 12 | velocidade máxima da rolagem (dentes da roda por segundo) |
-| `camera.index` / `camera.rotate` | 0 / 0 | índice ou URL da câmera; rotação da imagem em graus |
+| `camera.index` / `camera.rotate` | auto / 0 | `auto`, índice ou URL da câmera; rotação da imagem em graus |
 | `tremor.frequency_hz` / `amplitude` | 5 Hz / 0.01 | tremor sintético (fração da largura da imagem) |
 
 ## Ferramentas de avaliação
@@ -149,6 +163,7 @@ src/gesture_mouse/
   tracker.py               MediaPipe Hand Landmarker
   mapping.py               imagem -> tela (caixa de controle)
   calibration.py           calibração da amplitude de movimento
+  camera.py                busca automática da câmera (webcam ou celular na rede) e reconexão
   filters.py               nenhum, média móvel, Kalman, 1€
   clicks.py                clique por pinça e por permanência
   gestures.py              rolagem, clique direito/duplo e tipo de clique por permanência

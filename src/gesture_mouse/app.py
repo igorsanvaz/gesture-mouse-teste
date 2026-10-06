@@ -7,6 +7,8 @@ Teclas (com a janela da câmera em foco):
     B       escolhe o próximo clique por permanência (esquerdo / duplo / direito / meio / arrastar)
     F       alterna o filtro (nenhum / média móvel / Kalman / 1€)
     T       liga/desliga o tremor sintético (experimentos)
+    N       troca para a próxima câmera encontrada (webcam ou celular na rede)
+    R       gira a imagem da câmera em 90° (celular em pé)
     S       salva a configuração atual em config.json
     Q / ESC sai
 
@@ -20,12 +22,13 @@ Gestos (com o controle ativo):
 from __future__ import annotations
 
 import argparse
-import sys
 import time
+from pathlib import Path
 
 import cv2
 
 from .calibration import CalibrationPhase, Calibrator
+from .camera import CameraManager, describe, parse_source, waiting_frame
 from .clicks import ClickEvent, DwellClicker, PinchClicker, pinch_ratio
 from .config import DEFAULT_CONFIG_PATH, AppConfig
 from .cursor import CursorController
@@ -66,6 +69,7 @@ class GestureMouseApp:
         self.logger = SessionLogger(cfg.log.directory, cfg.log.enabled)
         self.fps = FpsMeter()
         self.active = False           # começa pausado por segurança
+        self.camera: CameraManager | None = None
         self.last_screen = None       # última posição enviada ao cursor
         self.message = ""
         self.message_until = 0.0
@@ -122,6 +126,15 @@ class GestureMouseApp:
         elif key in (ord("t"), ord("T")):
             self.cfg.tremor.enabled = not self.cfg.tremor.enabled
             self.notify(f"Tremor sintetico: {'ligado' if self.cfg.tremor.enabled else 'desligado'}", now)
+        elif key in (ord("n"), ord("N")) and self.camera is not None:
+            self.reset_interaction()
+            self.camera.next_camera()
+            self.notify("Procurando a proxima camera...", now)
+        elif key in (ord("r"), ord("R")):
+            cam = self.cfg.camera
+            cam.rotate = (cam.rotate + 90) % 360
+            self.reset_interaction()
+            self.notify(f"Rotacao da imagem: {cam.rotate} graus (S para salvar)", now)
         elif key in (ord("s"), ord("S")):
             self.cfg.save(self.config_path)
             self.notify(f"Configuracao salva em {self.config_path}", now)
@@ -264,7 +277,8 @@ class GestureMouseApp:
         draw_status(frame, [
             f"{status} | clique: {click} | filtro: {FILTER_LABELS[cfg.filter.kind]}"
             + (" | TREMOR" if cfg.tremor.enabled else ""),
-            f"{fps:4.1f} quadros/s | processamento {proc_ms:4.1f} ms",
+            f"{fps:4.1f} quadros/s | processamento {proc_ms:4.1f} ms"
+            + (f" | {describe(self.camera.source)}" if self.camera and self.camera.source is not None else ""),
         ])
         if self.active and self.posture.posture == Posture.SCROLL:
             draw_scroll(frame, self.scroller.offset, self.scroller.dead_zone,
@@ -277,20 +291,9 @@ class GestureMouseApp:
     # ------------------------------------------------------------------
     def run(self) -> None:
         cam = self.cfg.camera
-        # No Windows o DirectShow abre mais rápido, mas algumas câmeras virtuais
-        # (ex.: DroidCam) só funcionam pelo backend padrão (MSMF)
-        backends = [cv2.CAP_DSHOW, cv2.CAP_ANY] if sys.platform == "win32" else [cv2.CAP_ANY]
-        if isinstance(cam.index, str):  # URL de vídeo (câmera IP)
-            backends = [cv2.CAP_ANY]
-        for backend in backends:
-            cap = cv2.VideoCapture(cam.index, backend)
-            if cap.isOpened():
-                break
-            cap.release()
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cam.width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cam.height)
-        if not cap.isOpened():
-            raise RuntimeError(f"Não foi possível abrir a webcam {cam.index}")
+        # encontra sozinha uma webcam ou um celular na rede, e reconecta se cair
+        self.camera = CameraManager(cam.index, cam.width, cam.height,
+                                    cache_path=Path(self.cfg.log.directory) / "ultima_camera.json")
 
         t = self.cfg.tracker
         tracker = HandTracker(t.model_path, t.min_detection_confidence,
@@ -303,10 +306,18 @@ class GestureMouseApp:
         t_start = time.perf_counter()
         try:
             while True:
-                ok, frame = cap.read()
+                ok, frame = self.camera.read()
                 if not ok:
-                    print("Falha ao ler a webcam")
-                    break
+                    # sem câmera: solta o mouse e espera a busca em segundo plano
+                    if self.cursor.button_down or self.active:
+                        self.reset_interaction()
+                    cv2.imshow(WINDOW, waiting_frame(self.camera.status))
+                    key = cv2.waitKey(30) & 0xFF
+                    if key != 255 and not self.handle_key(key, time.perf_counter() - t_start):
+                        break
+                    if cv2.getWindowProperty(WINDOW, cv2.WND_PROP_VISIBLE) < 1:
+                        break
+                    continue
                 t_frame = time.perf_counter()
                 now = t_frame - t_start
                 if cam.rotate in ROTATIONS:
@@ -331,7 +342,7 @@ class GestureMouseApp:
         finally:
             self.cursor.release_all()
             tracker.close()
-            cap.release()
+            self.camera.close()
             cv2.destroyAllWindows()
             self.logger.close()
 
@@ -342,7 +353,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="arquivo de configuração JSON")
     p.add_argument("--filter", choices=FILTER_KINDS, help="filtro de suavização")
     p.add_argument("--click", choices=("dwell", "pinch"), help="modo de clique")
-    p.add_argument("--camera", help="índice da webcam ou URL de vídeo (ex.: http://IP:4747/video)")
+    p.add_argument("--camera", help="auto (padrão: procura webcam e celular na rede), "
+                                    "índice da webcam ou URL de vídeo (ex.: http://IP:4747/video)")
     p.add_argument("--rotate", type=int, choices=(0, 90, 180, 270),
                    help="gira a imagem da câmera (graus, sentido horário)")
     p.add_argument("--tremor", action="store_true", help="liga o tremor sintético")
@@ -359,7 +371,7 @@ def main(argv=None) -> None:
     if args.click:
         cfg.click.mode = args.click
     if args.camera is not None:
-        cfg.camera.index = int(args.camera) if args.camera.isdigit() else args.camera
+        cfg.camera.index = parse_source(args.camera)
     if args.rotate is not None:
         cfg.camera.rotate = args.rotate
     if args.tremor:

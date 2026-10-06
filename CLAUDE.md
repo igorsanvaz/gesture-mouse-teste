@@ -6,7 +6,7 @@ Diferenciais: filtro 1€ contra tremor, clique por permanência e calibração 
 
 ## Comandos
 
-- Rodar: `python run.py` (opções: `--dry-run`, `--filter`, `--click`, `--tremor`)
+- Rodar: `python run.py` (opções: `--dry-run`, `--filter`, `--click`, `--tremor`, `--camera`, `--rotate`)
 - Testes: `python -m pytest` (os testes não precisam de câmera nem de MediaPipe)
 - Benchmark dos filtros: `python tools/filter_benchmark.py`
 - Teste de Fitts: `python tools/fitts_test.py --participante P01 --condicao mouse`
@@ -15,7 +15,7 @@ Diferenciais: filtro 1€ contra tremor, clique por permanência e calibração 
 ## Arquitetura
 
 Pipeline por quadro em `src/gesture_mouse/app.py`:
-captura (OpenCV) → `tracker.HandTracker` (MediaPipe Tasks, modo VIDEO) →
+captura (`camera.CameraManager`: busca automática e reconexão) → `tracker.HandTracker` (MediaPipe Tasks, modo VIDEO) →
 ponto da mão (`tracker.cursor_landmark`, padrão 9) → `tremor` (opcional) →
 `mapping.image_to_screen` com a `ControlBox` calibrada → `filters` (em px de tela) →
 `gestures.PostureDetector` (rolagem com `gestures.ScrollController`, ou cliques:

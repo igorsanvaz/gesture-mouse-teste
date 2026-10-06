@@ -11,8 +11,10 @@ DEFAULT_CONFIG_PATH = Path("config.json")
 
 @dataclass
 class CameraConfig:
-    # índice da webcam (0 = padrão) ou URL de vídeo, ex.: "http://192.168.0.10:4747/video" (DroidCam)
-    index: int | str = 0
+    # "auto" procura sozinho (webcams locais e celulares na rede); também aceita o índice
+    # da webcam (0, 1...) ou uma URL de vídeo, ex.: "http://192.168.0.10:4747/video" (DroidCam).
+    # Se a fonte fixada falhar (ex.: o IP do celular mudou), a busca automática assume.
+    index: int | str = "auto"
     width: int = 640            # resolução de captura (px)
     height: int = 480
     mirror: bool = True         # espelha a imagem para o movimento parecer natural
